@@ -95,8 +95,15 @@ def main():
         addr_val = cells[COL_ADDRESS].value
         city_val = cells[COL_CITY].value
         state_val = cells[COL_STATE].value
-        zip_val = str(cells[COL_ZIP].value).split('.').strip() if COL_ZIP in cells and cells[COL_ZIP].value else ""
         
+        if COL_ZIP in cells and cells[COL_ZIP].value:
+            raw_zip_string = str(cells[COL_ZIP].value)
+            split_zip_components = raw_zip_string.split('.')
+            target_zip_segment = split_zip_components
+            zip_val = target_zip_segment.strip()
+        else:
+            zip_val = ""
+            
         s_coords = get_staging_coords(staging_val)
         s_coords_str = f"{s_coords}, {s_coords}" if s_coords else ""
         
