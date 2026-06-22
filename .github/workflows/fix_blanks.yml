@@ -1,0 +1,28 @@
+name: Run Rigorous Fallback Cleanup
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-cleanup:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository Code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install smartsheet-python-sdk geopy
+
+    - name: Execute Fallback Processor
+      env:
+        SMARTSHEET_TOKEN: ${{ secrets.SMARTSHEET_TOKEN }}
+        SHEET_ID: ${{ secrets.SHEET_ID }}
+      run: python fix_blanks.py
