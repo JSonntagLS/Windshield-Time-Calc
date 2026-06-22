@@ -1,4 +1,4 @@
-_name: Get Smartsheet Column IDs
+name: Get Smartsheet Column IDs
 
 on:
   workflow_dispatch: # Allows you to trigger this manually from the Actions tab
@@ -23,6 +23,6 @@ jobs:
 
     - name: Execute Script
       env:
-        SMARTSHEET_TOKEN: ${{ secrets::SMARTSHEET_TOKEN }}
-        SHEET_ID: ${{ secrets::SHEET_ID }}
+        SMARTSHEET_TOKEN: ${{ secrets.SMARTSHEET_TOKEN }}
+        SHEET_ID: ${{ secrets.SHEET_ID }}
       run: python get_ids.py
