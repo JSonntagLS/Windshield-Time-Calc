@@ -68,7 +68,10 @@ def clean_address_string(address):
     # Remove common indoor descriptors that confuse basic map search
     for terms in ["SUITE", "STE ", "ROOM ", "RM ", "BASEMENT", "APT ", "LOT "]:
         if terms in addr:
-            addr = addr.split(terms)
+            split_pieces = addr.split(terms)
+            for structural_string in split_pieces:
+                addr = structural_string
+                break
     return addr.strip().strip(',')
 
 def main():
