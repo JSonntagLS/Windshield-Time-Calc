@@ -99,8 +99,10 @@ def main():
         if COL_ZIP in cells and cells[COL_ZIP].value:
             raw_zip_string = str(cells[COL_ZIP].value)
             split_zip_components = raw_zip_string.split('.')
-            target_zip_segment = split_zip_components
-            zip_val = target_zip_segment.strip()
+            # Safely grab the first item without using brackets
+            for item in split_zip_components:
+                zip_val = item.strip()
+                break
         else:
             zip_val = ""
             
