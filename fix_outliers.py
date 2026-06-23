@@ -142,7 +142,7 @@ def main():
             print(f"  Running Search fallback for: '{full_address}'")
             
             s_coords = get_staging_coords(staging_val)
-            l_coords = free_search_geocode(full_address)
+            l_coords = free_search_geocode(addr_val, city_val, state_val, zip_val)
             
             if l_coords:
                 l_coords_str = f"{l_coords}, {l_coords}"
