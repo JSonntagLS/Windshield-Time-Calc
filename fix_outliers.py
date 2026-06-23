@@ -61,23 +61,38 @@ def get_staging_coords(location_string):
             return coords
     return None
 
-def free_search_geocode(query_string):
-    """Queries an open public search parser that handles raw text queries without API keys."""
+import time
+
+def free_search_geocode(addr_val, city_val, state_val, zip_val):
+    """Queries a structured open public search parser using explicit address parameters to prevent wild misses."""
     try:
-        # Separate mashed words and numbers like 'School206' or 'Church2712'
-        cleaned_query = ""
-        for i in range(len(query_string)):
-            cleaned_query += query_string[i]
-            if i < len(query_string) - 1:
-                if query_string[i].isalpha() and query_string[i+1].isdigit():
-                    cleaned_query += " "
-                    
-        encoded_query = urllib.parse.quote(cleaned_query)
-        url = f"https://nominatim.openstreetmap.org/search?q={encoded_query}&format=json&limit=1"
+        # Enforce rate limit protection delay
+        time.sleep(3.0)
+        
+        # Clean church/school text blocks if they are mashed against numbers
+        clean_street = ""
+        raw_street = str(addr_val)
+        for i in range(len(raw_street)):
+            clean_street += raw_street[i]
+            if i < len(raw_street) - 1:
+                if raw_street[i].isalpha() and raw_street[i+1].isdigit():
+                    clean_street += " "
+
+        params = {
+            'street': clean_street.strip(),
+            'city': str(city_val).strip(),
+            'state': str(state_val).strip(),
+            'postalcode': str(zip_val).strip(),
+            'format': 'json',
+            'limit': '1'
+        }
+        
+        encoded_params = urllib.parse.urlencode(params)
+        url = f"https://nominatim.openstreetmap.org/search?{encoded_params}"
         
         req = urllib.request.Request(
             url, 
-            headers={'User-Agent': 'lifeserve_outlier_search_v2'}
+            headers={'User-Agent': 'lifeserve_outlier_structured_v3'}
         )
         
         with urllib.request.urlopen(req, timeout=10) as response:
@@ -85,7 +100,7 @@ def free_search_geocode(query_string):
             if data and isinstance(data, list) and len(data) > 0:
                 return (float(data["lat"]), float(data["lon"]))
     except Exception as e:
-        print(f"  Search lookup encountered an issue: {e}")
+        print(f"  Structured search lookup encountered an issue: {e}")
     return None
 
 def main():
