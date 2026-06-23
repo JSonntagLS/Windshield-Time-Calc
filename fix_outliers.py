@@ -154,7 +154,10 @@ def main():
             
             # Clean up rogue commas and split text bugs in the city string
             clean_city = str(city_val).replace(",", "").strip()
-            if clean_city.lower() == "spirit":
+            # Normalize internal multi-spaces caused by erratic commas
+            clean_city = " ".join(clean_city.split())
+            
+            if clean_city.lower() == "spirit" or clean_city.lower() == "spirit lake":
                 clean_city = "Spirit Lake"
             elif clean_city.lower().replace(" ", "") == "lemars":
                 clean_city = "Le Mars"
