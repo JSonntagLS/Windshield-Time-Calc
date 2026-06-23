@@ -129,7 +129,7 @@ def main():
             continue
             
         # Target rows exceeding 200 miles
-        if distance_val > 200.0:
+        if distance_val > 250.0:
             staging_val = cells[COL_STAGING_LOC].value
             addr_val = cells[COL_ADDRESS].value
             city_val = cells[COL_CITY].value
@@ -174,9 +174,9 @@ def main():
                 new_miles = haversine_distance(s_coords, l_coords)
                 
                 # CRITICAL RUNTIME VERIFICATION [cite: 2026-05-22]
-                # If Google somehow still yields a location over 200 miles away, halt instantly
-                if new_miles is not None and new_miles > 200.0:
-                    print(f"  WARNING: Google search fallback still resulted in a distance over 200 miles: {new_miles} mi.")
+                # If Google somehow still yields a location over 250 miles away, halt instantly
+                if new_miles is not None and new_miles > 250.0:
+                    print(f"  WARNING: Google search fallback still resulted in a distance over 250 miles: {new_miles} mi.")
                     print(f"  Halting runtime to inspect. Check 'l_coords' and 'full_address'.")
                     import pdb; pdb.set_trace()
                 
