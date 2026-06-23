@@ -157,8 +157,13 @@ def main():
             if clean_city.lower() == "spirit":
                 clean_city = "Spirit Lake"
             
-            # Completely bypass street addresses to prevent engine errors
-            town_query = f"{clean_city}, {state_val} {zip_val}".strip()
+            # Use a structured query dictionary to prevent global naming collisions
+            town_query = {
+                "city": clean_city,
+                "state": state_val,
+                "postalcode": zip_val,
+                "country": "United States"
+            }
             
             try:
                 # Add a sleep delay to stop 429 rate limit errors completely
@@ -173,7 +178,7 @@ def main():
                 if loc:
                     l_coords = (loc.latitude, loc.longitude)
             except Exception as e:
-                print(f"  Town center query failed for {town_query}: {e}")
+                print(f"  Town center query failed for {clean_city}, {state_val}: {e}")
             
             if l_coords:
                 l_coords_str = f"{l_coords}, {l_coords}"
