@@ -124,10 +124,10 @@ def main():
             
             full_address = f"{addr_val}, {city_val}, {state_val} {zip_val}".strip()
             print(f"\n[Row ID {row.id}] Outlier detected: {distance_val} miles.")
-            print(f"  Running Google Search fallback for: '{full_address}'")
+            print(f"  Running Search fallback for: '{full_address}'")
             
             s_coords = get_staging_coords(staging_val)
-            l_coords = google_search_geocode(full_address)
+            l_coords = free_search_geocode(full_address)
             
             if l_coords:
                 l_coords_str = f"{l_coords}, {l_coords}"
