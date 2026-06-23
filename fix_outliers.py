@@ -149,7 +149,18 @@ def main():
             print(f"  Running Search fallback for: '{full_address}'")
             
             s_coords = get_staging_coords(staging_val)
-            l_coords = free_search_geocode(addr_val, city_val, state_val, zip_val)
+            l_coords = None
+            
+            # Completely bypass street addresses to prevent engine errors
+            town_query = f"{city_val}, {state_val} {zip_val}".strip()
+            
+            try:
+                # Use standard geopy geocoding to find the town center directly
+                loc = geocode(town_query)
+                if loc:
+                    l_coords = (loc.latitude, loc.longitude)
+            except Exception as e:
+                print(f"  Town center query failed for {town_query}: {e}")
             
             if l_coords:
                 l_coords_str = f"{l_coords}, {l_coords}"
