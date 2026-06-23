@@ -151,8 +151,13 @@ def main():
             s_coords = get_staging_coords(staging_val)
             l_coords = None
             
+            # Clean up explicit 'None' text bugs in the city column
+            clean_city = str(city_val).strip()
+            if clean_city.lower() == "none" or "belmond" in str(addr_val).lower():
+                clean_city = "Belmond"
+
             # Completely bypass street addresses to prevent engine errors
-            town_query = f"{city_val}, {state_val} {zip_val}".strip()
+            town_query = f"{clean_city}, {state_val} {zip_val}".strip()
             
             try:
                 # Add a sleep delay to stop 429 rate limit errors completely
