@@ -145,19 +145,8 @@ def main():
                     break
             
             full_address = f"{addr_val}, {city_val}, {state_val} {zip_val}".strip()
-            print(f"[Row ID {row.id}] Outlier detected: {distance_val} miles.")
+            print(f"\n[Row ID {row.id}] Outlier detected: {distance_val} miles.")
             print(f"  Running Search fallback for: '{full_address}'")
-            
-            s_coords = get_staging_coords(staging_val)
-            l_coords = None
-            
-            # Clean up rogue commas and split text bugs in the city string
-            clean_city = str(city_val).replace(",", "").strip()
-            if clean_city.lower() == "spirit":
-                clean_city = "Spirit Lake"
-            
-            # Completely bypass street addresses to prevent engine errors
-            town_query = f"{clean_city}, {state_val} {zip_val}".strip()
             
             s_coords = get_staging_coords(staging_val)
             l_coords = None
@@ -190,9 +179,9 @@ def main():
                 new_miles = haversine_distance(s_coords, l_coords)
                 
                 # CRITICAL RUNTIME VERIFICATION [cite: 2026-05-22]
-                # If Google somehow still yields a location over 250 miles away, halt instantly
+                # If Google somehow still yields a location over 300 miles away, halt instantly
                 if new_miles is not None and new_miles > 300.0:
-                    print(f"  WARNING: Google search fallback still resulted in a distance over 250 miles: {new_miles} mi.")
+                    print(f"  WARNING: Google search fallback still resulted in a distance over 300 miles: {new_miles} mi.")
                     print(f"  Halting runtime to inspect. Check 'l_coords' and 'full_address'.")
                     import pdb; pdb.set_trace()
                 
