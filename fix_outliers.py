@@ -139,10 +139,13 @@ def main():
             zip_val = ""
             if COL_ZIP in cells and cells[COL_ZIP].value:
                 raw_zip_string = str(cells[COL_ZIP].value)
-                split_zip_components = raw_zip_string.split('.')
-                for item in split_zip_components:
-                    zip_val = item.strip()
-                    break
+                # Split off floating point decimals
+                if "." in raw_zip_string:
+                    raw_zip_string = raw_zip_string.split(".")
+                # Split off 9-digit ZIP code hyphen extensions to prevent engine errors
+                if "-" in raw_zip_string:
+                    raw_zip_string = raw_zip_string.split("-")
+                zip_val = raw_zip_string.strip()
             
             full_address = f"{addr_val}, {city_val}, {state_val} {zip_val}".strip()
             print(f"\n[Row ID {row.id}] Outlier detected: {distance_val} miles.")
