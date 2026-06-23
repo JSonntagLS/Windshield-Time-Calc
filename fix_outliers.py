@@ -156,6 +156,8 @@ def main():
             clean_city = str(city_val).replace(",", "").strip()
             if clean_city.lower() == "spirit":
                 clean_city = "Spirit Lake"
+            elif clean_city.lower().replace(" ", "") == "lemars":
+                clean_city = "Le Mars"
             
             # Use a structured query dictionary to prevent global naming collisions
             town_query = {
