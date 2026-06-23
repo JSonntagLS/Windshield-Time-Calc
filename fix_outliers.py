@@ -155,8 +155,11 @@ def main():
             town_query = f"{city_val}, {state_val} {zip_val}".strip()
             
             try:
-                # Use standard geopy geocoding to find the town center directly
-                loc = geocode(town_query)
+                # Initialize the proper Geopy tool inside the execution step
+                from geopy.geocoders import Nominatim
+                geolocator = Nominatim(user_agent="lifeserve_outlier_town_v5")
+                
+                loc = geolocator.geocode(town_query, timeout=10)
                 if loc:
                     l_coords = (loc.latitude, loc.longitude)
             except Exception as e:
