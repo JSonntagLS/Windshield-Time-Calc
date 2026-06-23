@@ -128,17 +128,36 @@ def main():
         except ValueError:
             continue
             
-        # Target rows exceeding 250 miles
+        # Target rows exceeding 300 miles exclusively
         if distance_val >= 300.0:
             staging_val = cells[COL_STAGING_LOC].value
-            addr_val = cells[COL_STREET].value
+            addr_val = cells[COL_ADDRESS].value
             city_val = cells[COL_CITY].value
             state_val = cells[COL_STATE].value
-            zip_val = cells[COL_ZIP].value
+            
+            # Safely extract ZIP
+            zip_val = ""
+            if COL_ZIP in cells and cells[COL_ZIP].value:
+                raw_zip_string = str(cells[COL_ZIP].value)
+                split_zip_components = raw_zip_string.split('.')
+                for item in split_zip_components:
+                    zip_val = item.strip()
+                    break
             
             full_address = f"{addr_val}, {city_val}, {state_val} {zip_val}".strip()
             print(f"[Row ID {row.id}] Outlier detected: {distance_val} miles.")
             print(f"  Running Search fallback for: '{full_address}'")
+            
+            s_coords = get_staging_coords(staging_val)
+            l_coords = None
+            
+            # Clean up rogue commas and split text bugs in the city string
+            clean_city = str(city_val).replace(",", "").strip()
+            if clean_city.lower() == "spirit":
+                clean_city = "Spirit Lake"
+            
+            # Completely bypass street addresses to prevent engine errors
+            town_query = f"{clean_city}, {state_val} {zip_val}".strip()
             
             s_coords = get_staging_coords(staging_val)
             l_coords = None
