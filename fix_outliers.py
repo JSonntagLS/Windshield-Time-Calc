@@ -131,7 +131,7 @@ def main():
         # Target rows exceeding 250 miles
         if distance_val >= 300.0:
             staging_val = cells[COL_STAGING_LOC].value
-            addr_val = cells[COL_STREET_ADDR].value
+            addr_val = cells[COL_STREET].value
             city_val = cells[COL_CITY].value
             state_val = cells[COL_STATE].value
             zip_val = cells[COL_ZIP].value
