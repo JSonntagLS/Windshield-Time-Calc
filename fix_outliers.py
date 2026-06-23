@@ -61,24 +61,31 @@ def get_staging_coords(location_string):
             return coords
     return None
 
-def google_search_geocode(query_string):
-    """Queries a public Google Maps geocoding endpoint directly to simulate a Google Search lookup."""
+def free_search_geocode(query_string):
+    """Queries an open public search parser that handles raw text queries without API keys."""
     try:
-        encoded_query = urllib.parse.quote(query_string)
-        url = f"https://maps.googleapis.com/maps/api/geocode/json?address={encoded_query}&sensor=false"
+        # Separate mashed words and numbers like 'School206' or 'Church2712'
+        cleaned_query = ""
+        for i in range(len(query_string)):
+            cleaned_query += query_string[i]
+            if i < len(query_string) - 1:
+                if query_string[i].isalpha() and query_string[i+1].isdigit():
+                    cleaned_query += " "
+                    
+        encoded_query = urllib.parse.quote(cleaned_query)
+        url = f"https://nominatim.openstreetmap.org/search?q={encoded_query}&format=json&limit=1"
         
         req = urllib.request.Request(
             url, 
-            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+            headers={'User-Agent': 'lifeserve_outlier_search_v2'}
         )
         
         with urllib.request.urlopen(req, timeout=10) as response:
             data = json.loads(response.read().decode())
-            if data.get("status") == "OK" and data.get("results"):
-                loc_data = data["results"]["geometry"]["location"]
-                return (loc_data["lat"], loc_data["lng"])
+            if data and isinstance(data, list) and len(data) > 0:
+                return (float(data["lat"]), float(data["lon"]))
     except Exception as e:
-        print(f"  Google search lookup encountered an issue: {e}")
+        print(f"  Search lookup encountered an issue: {e}")
     return None
 
 def main():
