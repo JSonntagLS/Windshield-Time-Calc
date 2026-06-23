@@ -155,9 +155,13 @@ def main():
             town_query = f"{city_val}, {state_val} {zip_val}".strip()
             
             try:
+                # Add a sleep delay to stop 429 rate limit errors completely
+                import time
+                time.sleep(2.0)
+                
                 # Initialize the proper Geopy tool inside the execution step
                 from geopy.geocoders import Nominatim
-                geolocator = Nominatim(user_agent="lifeserve_outlier_town_v5")
+                geolocator = Nominatim(user_agent="lifeserve_outlier_town_v6")
                 
                 loc = geolocator.geocode(town_query, timeout=10)
                 if loc:
