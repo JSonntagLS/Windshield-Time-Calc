@@ -63,44 +63,51 @@ def get_staging_coords(location_string):
 
 import time
 
-def free_search_geocode(addr_val, city_val, state_val, zip_val):
-    """Queries a structured open public search parser using explicit address parameters to prevent wild misses."""
-    try:
-        # Enforce rate limit protection delay
-        time.sleep(3.0)
-        
-        # Clean church/school text blocks if they are mashed against numbers
-        clean_street = ""
-        raw_street = str(addr_val)
-        for i in range(len(raw_street)):
-            clean_street += raw_street[i]
-            if i < len(raw_street) - 1:
-                if raw_street[i].isalpha() and raw_street[i+1].isdigit():
-                    clean_street += " "
+import time
 
-        params = {
-            'street': clean_street.strip(),
-            'city': str(city_val).strip(),
-            'state': str(state_val).strip(),
-            'postalcode': str(zip_val).strip(),
-            'format': 'json',
-            'limit': '1'
-        }
+def free_search_geocode(addr_val, city_val, state_val, zip_val):
+    """Queries an open public search engine using a natural free-text query with a safety rate-limiting delay."""
+    try:
+        time.sleep(3.0)  # Rate-limiting safety window
         
-        encoded_params = urllib.parse.urlencode(params)
-        url = f"https://nominatim.openstreetmap.org/search?{encoded_params}"
+        # Build a natural text search phrase just like a web search
+        full_phrase = f"{addr_val}, {city_val}, {state_val} {zip_val}".strip()
+        
+        # Clean up mashed words like 'School206' -> 'School 206'
+        cleaned_phrase = ""
+        for i in range(len(full_phrase)):
+            cleaned_phrase += full_phrase[i]
+            if i < len(full_phrase) - 1:
+                if full_phrase[i].isalpha() and full_phrase[i+1].isdigit():
+                    cleaned_phrase += " "
+                    
+        encoded_query = urllib.parse.quote(cleaned_phrase)
+        url = f"https://nominatim.openstreetmap.org/search?q={encoded_query}&format=json&limit=1"
         
         req = urllib.request.Request(
             url, 
-            headers={'User-Agent': 'lifeserve_outlier_structured_v3'}
+            headers={'User-Agent': 'lifeserve_outlier_text_v4'}
         )
         
         with urllib.request.urlopen(req, timeout=10) as response:
             data = json.loads(response.read().decode())
-            if data and isinstance(data, list) and len(data) > 0:
+            if isinstance(data, list) and len(data) > 0:
                 return (float(data["lat"]), float(data["lon"]))
+                
+        # ABSOLUTE FALLBACK: If the full street address fails, query just the City, State, ZIP town center
+        print(f"  Street-level match failed. Dropping back to town center fallback...")
+        fallback_phrase = f"{city_val}, {state_val} {zip_val}".strip()
+        encoded_fallback = urllib.parse.quote(fallback_phrase)
+        url_fb = f"https://nominatim.openstreetmap.org/search?q={encoded_fallback}&format=json&limit=1"
+        
+        req_fb = urllib.request.Request(url_fb, headers={'User-Agent': 'lifeserve_outlier_text_fallback'})
+        with urllib.request.urlopen(req_fb, timeout=10) as response_fb:
+            data_fb = json.loads(response_fb.read().decode())
+            if isinstance(data_fb, list) and len(data_fb) > 0:
+                return (float(data_fb["lat"]), float(data_fb["lon"]))
+                
     except Exception as e:
-        print(f"  Structured search lookup encountered an issue: {e}")
+        print(f"  Search lookup encountered an issue: {e}")
     return None
 
 def main():
