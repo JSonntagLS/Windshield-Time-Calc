@@ -1,0 +1,29 @@
+name: Sync Collection Projections to Smartsheet
+
+on:
+  workflow_dispatch: # Allows you to manually trigger it from GitHub whenever a new file lands
+
+jobs:
+  sync-data:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code Repository
+      uses: actions/checkout@v4
+
+    - name: Set Up Python Runtime
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+
+    - name: Install Deployment Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pandas smartsheet-python-sdk
+
+    - name: Execute Matching Injection Script
+      env:
+        SMARTSHEET_ACCESS_TOKEN: ${{ secrets.SMARTSHEET_ACCESS_TOKEN }}
+      run: |
+        python update_projections.py
