@@ -48,20 +48,28 @@ def update_smartsheet_projections():
     print(f"Opening Excel workbook: {excel_file}")
     df = pd.read_excel(excel_file, sheet_name=0)
     
+    # Standardize column headers by converting to lowercase and stripping hidden spaces
+    df.columns = df.columns.astype(str).str.strip().str.lower()
+    
+    # Explicitly map our standardized lowercase column target matches
+    date_col = "drive date"
+    becs_col = "account code"
+    setup_col = "staffing setups"
+    
     # Standardizing incoming data layouts to guarantee exact string lookup matches
-    df["Date"] = pd.to_datetime(df["Date"]).dt.strftime("%Y-%m-%d")
-    df["BECS Code"] = df["BECS Code"].astype(str).str.strip()
+    df[date_col] = pd.to_datetime(df[date_col]).dt.strftime("%Y-%m-%d")
+    df[becs_col] = df[becs_col].astype(str).str.strip()
     
     # Apply the regex scrubber to extract just the base staffing number from Staffing Setups
-    df["Staffing Count Cleaned"] = df["Staffing Setups"].apply(extract_staff_count)
+    df["staffing count cleaned"] = df[setup_col].apply(extract_staff_count)
     
     # Generate composite mapping dictionary lookup keys (Date + BECS Code)
     projection_lookup = {}
     for _, row in df.iterrows():
         # Only map rows where the scrubber successfully found a number
-        if row["Staffing Count Cleaned"]:
-            composite_key = f"{row['Date']}_{row['BECS Code']}"
-            projection_lookup[composite_key] = row["Staffing Count Cleaned"]
+        if row["staffing count cleaned"]:
+            composite_key = f"{row[date_col]}_{row[becs_col]}"
+            projection_lookup[composite_key] = row["staffing count cleaned"]
 
     print(f"Successfully loaded {len(projection_lookup)} mapping rules from Excel.")
     print("Fetching active sheet data from master Smartsheet channel...")
