@@ -23,6 +23,7 @@ jobs:
 
     - name: Execute Matching Injection Script
       env:
-        SMARTSHEET_ACCESS_TOKEN: ${{ secrets.SMARTSHEET_TOKEN }}
+        SMARTSHEET_TOKEN: ${{ secrets.SMARTSHEET_TOKEN }}
+        SHEET_ID: ${{ secrets.SHEET_ID }}
       run: |
         python update_projections.py
