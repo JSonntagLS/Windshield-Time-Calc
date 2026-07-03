@@ -1,8 +1,26 @@
 import os
+import re
 import pandas as pd
 import smartsheet
 
 # Strict 4-space uniform indentation formatting enforced
+def extract_staff_count(raw_text):
+    if pd.isna(raw_text):
+        return ""
+    text = str(raw_text).strip()
+    
+    # Primary logic: looks specifically for a number before the word "staff" (e.g., "4 Staff")
+    match = re.search(r'(\d+)\s*staff', text, re.IGNORECASE)
+    if match:
+        return match.group(1)
+        
+    # Fallback logic: if "staff" is missing, grab the very first number in the string
+    fallback_match = re.search(r'(\d+)', text)
+    if fallback_match:
+        return fallback_match.group(1)
+        
+    return ""
+
 def update_smartsheet_projections():
     # Initialize credentials dynamically exactly like your successful coordinate script
     token = os.environ.get("SMARTSHEET_TOKEN")
@@ -19,10 +37,10 @@ def update_smartsheet_projections():
     # Hardcoded Column IDs matching your master grid mapping layout
     date_col_id = 3147075444576132
     becs_col_id = 2021175537733508
-    target_col_id = 6385244412612484  # Collection Projection Column ID
+    target_col_id = 293896911622020  # Staffing Count Column ID
 
-    # Use your exact newly uploaded file name
-    excel_file = "2025 Projections From Drives.xlsx"
+    # Target your newly uploaded historical overview spreadsheet
+    excel_file = "2025 Drive Overview.xlsx"
     if not os.path.exists(excel_file):
         print(f"Error: Target Excel workbook '{excel_file}' not found in workspace.")
         return
@@ -33,14 +51,17 @@ def update_smartsheet_projections():
     # Standardizing incoming data layouts to guarantee exact string lookup matches
     df["Date"] = pd.to_datetime(df["Date"]).dt.strftime("%Y-%m-%d")
     df["BECS Code"] = df["BECS Code"].astype(str).str.strip()
-    # Note: The raw excel column header you uploaded is called 'Projection'
-    df["Projection"] = df["Projection"].astype(str).str.strip()
+    
+    # Apply the regex scrubber to extract just the base staffing number from Staffing Setups
+    df["Staffing Count Cleaned"] = df["Staffing Setups"].apply(extract_staff_count)
     
     # Generate composite mapping dictionary lookup keys (Date + BECS Code)
     projection_lookup = {}
     for _, row in df.iterrows():
-        composite_key = f"{row['Date']}_{row['BECS Code']}"
-        projection_lookup[composite_key] = row["Projection"]
+        # Only map rows where the scrubber successfully found a number
+        if row["Staffing Count Cleaned"]:
+            composite_key = f"{row['Date']}_{row['BECS Code']}"
+            projection_lookup[composite_key] = row["Staffing Count Cleaned"]
 
     print(f"Successfully loaded {len(projection_lookup)} mapping rules from Excel.")
     print("Fetching active sheet data from master Smartsheet channel...")
@@ -51,7 +72,7 @@ def update_smartsheet_projections():
     for sheet_row in sheet.rows:
         row_date = ""
         row_becs = ""
-        current_projection_val = ""
+        current_target_val = ""
         
         for cell in sheet_row.cells:
             if cell.column_id == date_col_id and cell.value:
@@ -59,7 +80,7 @@ def update_smartsheet_projections():
             elif cell.column_id == becs_col_id and cell.value:
                 row_becs = str(cell.value).strip()
             elif cell.column_id == target_col_id:
-                current_projection_val = str(cell.value).strip() if cell.value else ""
+                current_target_val = str(cell.value).strip() if cell.value else ""
 
         if row_date and row_becs:
             lookup_key = f"{row_date}_{row_becs}"
@@ -67,8 +88,8 @@ def update_smartsheet_projections():
             if lookup_key in projection_lookup:
                 new_val = projection_lookup[lookup_key]
                 
-                # Only push an update if the projection column cell is different or blank
-                if current_projection_val != new_val:
+                # Only push an update if the Staffing Count column cell is different or blank
+                if current_target_val != new_val:
                     new_cell = smartsheet.models.Cell()
                     new_cell.column_id = target_col_id
                     new_cell.value = new_val
@@ -80,7 +101,7 @@ def update_smartsheet_projections():
 
     # Output to Smartsheet in chunks of 100 rows
     if rows_to_update:
-        print(f"Surgically transmitting {len(rows_to_update)} updated projection entries...")
+        print(f"Surgically transmitting {len(rows_to_update)} updated staffing entries...")
         chunk_size = 100
         for i in range(0, len(rows_to_update), chunk_size):
             chunk = rows_to_update[i:i + chunk_size]
