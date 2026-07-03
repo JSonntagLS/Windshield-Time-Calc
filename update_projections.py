@@ -19,7 +19,7 @@ def update_smartsheet_projections():
     target_col_id = 6385244412612484  # Collection Projection Column ID
 
     # Load and clean the new Excel export
-    excel_file = "2025_Drives_1782935207272.xlsx - sheet1.csv"
+    excel_file = "2025 Projections From Drives.xlsx"
     if not os.path.exists(excel_file):
         print(f"Error: Target data file {excel_file} not found.")
         return
