@@ -18,13 +18,15 @@ def update_smartsheet_projections():
     becs_col_id = 2021175537733508
     target_col_id = 6385244412612484  # Collection Projection Column ID
 
-    # Load and clean the new Excel export
+    # Define the raw Excel workbook name
     excel_file = "2025 Projections From Drives.xlsx"
     if not os.path.exists(excel_file):
-        print(f"Error: Target data file {excel_file} not found.")
+        print(f"Error: Target Excel workbook '{excel_file}' not found in the workspace.")
         return
         
-    df = pd.read_csv(excel_file)
+    print(f"Opening Excel workbook: {excel_file}")
+    # sheet_name=0 explicitly tells pandas to read the very first tab regardless of its name
+    df = pd.read_excel(excel_file, sheet_name=0)
     
     # standardizing values to ensure exact matching string lookups
     df["Date"] = pd.to_datetime(df["Date"]).dt.strftime("%Y-%m-%d")
