@@ -34,7 +34,7 @@ def update_smartsheet_projections():
     # Hardcoded Column IDs matching your master grid mapping layout
     date_col_id = 3147075444576132
     becs_col_id = 2021175537733508
-    target_col_id = 4755624290455428  # Collections Actual Column ID
+    target_col_id = 2803136452661124  # Cancelled? Column ID
 
     # Target your newly uploaded historical overview spreadsheet
     excel_file = "2025 Drive Overview.xlsx"
@@ -51,21 +51,22 @@ def update_smartsheet_projections():
     # Explicitly map our standardized lowercase column target matches
     date_col = "drive date"
     becs_col = "account code"
-    yield_col = "actual yield"
+    status_col = "drive status"
     
     # Standardizing incoming data layouts to guarantee exact string lookup matches
     df[date_col] = pd.to_datetime(df[date_col]).dt.strftime("%Y-%m-%d")
     df[becs_col] = df[becs_col].astype(str).str.strip()
-    df[yield_col] = df[yield_col].astype(str).str.strip()
+    df[status_col] = df[status_col].astype(str).str.strip()
     
     # Generate composite mapping dictionary lookup keys (Date + BECS Code)
-    yield_lookup = {}
+    status_lookup = {}
     for _, row in df.iterrows():
-        if row[yield_col] and row[yield_col] != "nan":
+        if row[status_col] and row[status_col] != "nan":
             composite_key = f"{row[date_col]}_{row[becs_col]}"
-            yield_lookup[composite_key] = row[yield_col]
+            # Mark Yes if it says Cancelled, otherwise mark No
+            status_lookup[composite_key] = "Yes" if row[status_col].lower() == "cancelled" else "No"
 
-    print(f"Successfully loaded {len(yield_lookup)} actual yield mapping rules from Excel.")
+    print(f"Successfully loaded {len(status_lookup)} cancellation rules from Excel.")
     print("Fetching active sheet data from master Smartsheet channel...")
     
     sheet = smartsheet_client.Sheets.get_sheet(sheet_id)
@@ -74,7 +75,7 @@ def update_smartsheet_projections():
     for sheet_row in sheet.rows:
         row_date = ""
         row_becs = ""
-        current_actual_val = ""
+        current_cancelled_val = ""
         
         for cell in sheet_row.cells:
             if cell.column_id == date_col_id and cell.value:
@@ -82,16 +83,16 @@ def update_smartsheet_projections():
             elif cell.column_id == becs_col_id and cell.value:
                 row_becs = str(cell.value).strip()
             elif cell.column_id == target_col_id:
-                current_actual_val = str(cell.value).strip() if cell.value else ""
+                current_cancelled_val = str(cell.value).strip() if cell.value else ""
 
         if row_date and row_becs:
             lookup_key = f"{row_date}_{row_becs}"
             
-            if lookup_key in yield_lookup:
-                new_val = yield_lookup[lookup_key]
+            if lookup_key in status_lookup:
+                new_val = status_lookup[lookup_key]
                 
-                # Only push an update if the Collections Actual cell is different or blank
-                if current_actual_val != new_val:
+                # Only push an update if the Cancelled? cell is different or blank
+                if current_cancelled_val != new_val:
                     new_cell = smartsheet.models.Cell()
                     new_cell.column_id = target_col_id
                     new_cell.value = new_val
