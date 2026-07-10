@@ -34,8 +34,7 @@ def update_smartsheet_projections():
     # Hardcoded Column IDs matching your master grid mapping layout
     date_col_id = 3147075444576132
     becs_col_id = 2021175537733508
-    start_time_col_id = 138544857517956   # Start Time Column ID
-    end_time_col_id = 4642144484888452    # End Time Column ID
+    target_col_id = 4755624290455428  # Collections Actual Column ID
 
     # Target your newly uploaded historical overview spreadsheet
     excel_file = "2025 Drive Overview.xlsx"
@@ -52,25 +51,21 @@ def update_smartsheet_projections():
     # Explicitly map our standardized lowercase column target matches
     date_col = "drive date"
     becs_col = "account code"
-    start_col = "start time"
-    end_col = "end time"
+    yield_col = "actual yield"
     
     # Standardizing incoming data layouts to guarantee exact string lookup matches
     df[date_col] = pd.to_datetime(df[date_col]).dt.strftime("%Y-%m-%d")
     df[becs_col] = df[becs_col].astype(str).str.strip()
-    
-    # Convert Excel values directly to military strings
-    df["start_military"] = df[start_col].apply(convert_to_military)
-    df["end_military"] = df[end_col].apply(convert_to_military)
+    df[yield_col] = df[yield_col].astype(str).str.strip()
     
     # Generate composite mapping dictionary lookup keys (Date + BECS Code)
-    time_lookup = {}
+    yield_lookup = {}
     for _, row in df.iterrows():
-        if row["start_military"] or row["end_military"]:
+        if row[yield_col] and row[yield_col] != "nan":
             composite_key = f"{row[date_col]}_{row[becs_col]}"
-            time_lookup[composite_key] = (row["start_military"], row["end_military"])
+            yield_lookup[composite_key] = row[yield_col]
 
-    print(f"Successfully loaded {len(time_lookup)} time mapping rules from Excel.")
+    print(f"Successfully loaded {len(yield_lookup)} actual yield mapping rules from Excel.")
     print("Fetching active sheet data from master Smartsheet channel...")
     
     sheet = smartsheet_client.Sheets.get_sheet(sheet_id)
@@ -79,42 +74,31 @@ def update_smartsheet_projections():
     for sheet_row in sheet.rows:
         row_date = ""
         row_becs = ""
-        current_start_val = ""
-        current_end_val = ""
+        current_actual_val = ""
         
         for cell in sheet_row.cells:
             if cell.column_id == date_col_id and cell.value:
                 row_date = pd.to_datetime(cell.value).strftime("%Y-%m-%d")
             elif cell.column_id == becs_col_id and cell.value:
                 row_becs = str(cell.value).strip()
-            elif cell.column_id == start_time_col_id:
-                current_start_val = str(cell.value).strip() if cell.value else ""
-            elif cell.column_id == end_time_col_id:
-                current_end_val = str(cell.value).strip() if cell.value else ""
+            elif cell.column_id == target_col_id:
+                current_actual_val = str(cell.value).strip() if cell.value else ""
 
         if row_date and row_becs:
             lookup_key = f"{row_date}_{row_becs}"
             
-            if lookup_key in time_lookup:
-                new_start, new_end = time_lookup[lookup_key]
-                cells_to_change = []
+            if lookup_key in yield_lookup:
+                new_val = yield_lookup[lookup_key]
                 
-                if new_start and current_start_val != new_start:
-                    start_cell = smartsheet.models.Cell()
-                    start_cell.column_id = start_time_col_id
-                    start_cell.value = new_start
-                    cells_to_change.append(start_cell)
+                # Only push an update if the Collections Actual cell is different or blank
+                if current_actual_val != new_val:
+                    new_cell = smartsheet.models.Cell()
+                    new_cell.column_id = target_col_id
+                    new_cell.value = new_val
                     
-                if new_end and current_end_val != new_end:
-                    end_cell = smartsheet.models.Cell()
-                    end_cell.column_id = end_time_col_id
-                    end_cell.value = new_end
-                    cells_to_change.append(end_cell)
-                    
-                if cells_to_change:
                     updated_row = smartsheet.models.Row()
                     updated_row.id = sheet_row.id
-                    updated_row.cells.extend(cells_to_change)
+                    updated_row.cells.append(new_cell)
                     rows_to_update.append(updated_row)
 
     # Output to Smartsheet in chunks of 100 rows
